@@ -1,0 +1,5 @@
+*.exe
+*.test
+*.out
+coverage.out
+vendor/

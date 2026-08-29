@@ -1,0 +1,76 @@
+name: ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: ["1.22.x", "1.25.x"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+      - name: gofmt
+        run: test -z "$(gofmt -l .)"
+      - name: test
+        run: go test -race -count=1 ./...
+      - name: vet
+        run: go vet ./...
+
+  fuzz:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.x"
+      - name: fuzz
+        run: |
+          go test -fuzz=FuzzEqValue -fuzztime=20s
+          go test -fuzz=FuzzIdent -fuzztime=20s
+
+  integration:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: internal/itest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sqlwhere
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      SQLWHERE_POSTGRES_DSN: postgres://postgres:postgres@localhost:5432/sqlwhere?sslmode=disable
+      SQLWHERE_REQUIRE_POSTGRES: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.x"
+      - name: integration
+        run: go test -race -count=1 ./...
+
+  govulncheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.x"
+      - name: govulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
