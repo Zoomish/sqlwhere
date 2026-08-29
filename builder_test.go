@@ -392,6 +392,27 @@ func TestBuildTable(t *testing.T) {
 			wantArg: []any{"a"},
 		},
 		{
+			name: "postgres json path bind and order",
+			build: func() (string, []any, error) {
+				return On(`SELECT id FROM t WHERE payload #> $1 ORDER BY id`).
+					Bind(`{"a"}`).
+					And(Eq("status", "x")).
+					Build(Postgres)
+			},
+			wantSQL: `SELECT id FROM t WHERE payload #> $1 AND ("status" = $2) ORDER BY id`,
+			wantArg: []any{`{"a"}`, "x"},
+		},
+		{
+			name: "postgres json path literal and order",
+			build: func() (string, []any, error) {
+				return On(`SELECT id FROM t WHERE payload #> '{"a"}' ORDER BY id`).
+					And(Eq("status", "x")).
+					Build(Postgres)
+			},
+			wantSQL: `SELECT id FROM t WHERE payload #> '{"a"}' AND ("status" = $1) ORDER BY id`,
+			wantArg: []any{"x"},
+		},
+		{
 			name: "plan example",
 			build: func() (string, []any, error) {
 				tenantID := "acme"

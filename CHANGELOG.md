@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `#` is a line comment only for the `Question` dialect. Postgres keeps JSON/path operators (`#>`, `#>>`, `#-`).
 - Predicates insert before outer `GROUP BY` / `HAVING` / `WINDOW` / `RETURNING` / `FETCH`.
 - `UPDATE t SET from = …` is not treated as `UPDATE ... FROM`.
 - `On` strips all trailing semicolons.

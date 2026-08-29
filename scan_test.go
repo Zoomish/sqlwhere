@@ -7,6 +7,7 @@ func TestAnalyzeSQL(t *testing.T) {
 	tests := []struct {
 		name          string
 		sql           string
+		d             Dialect
 		hasWhere      bool
 		hasOrder      bool
 		hasLimit      bool
@@ -162,11 +163,41 @@ func TestAnalyzeSQL(t *testing.T) {
 			sql:           "SELECT id FROM t WINDOW w AS (ORDER BY id)",
 			insertKeyword: "WINDOW",
 		},
+		{
+			name:          "postgres json path not a comment",
+			sql:           `SELECT id FROM t WHERE payload #> $1 ORDER BY id`,
+			hasWhere:      true,
+			hasOrder:      true,
+			maxDollar:     1,
+			insertKeyword: "ORDER",
+		},
+		{
+			name:          "postgres json path literal then order",
+			sql:           `SELECT id FROM t WHERE payload #> '{"a"}' ORDER BY id`,
+			hasWhere:      true,
+			hasOrder:      true,
+			insertKeyword: "ORDER",
+		},
+		{
+			name:     "question hash comment hides same-line order",
+			sql:      "SELECT id FROM t WHERE x = 1 # ORDER BY id",
+			d:        Question,
+			hasWhere: true,
+			hasOrder: false,
+		},
+		{
+			name:          "question hash comment then newline order",
+			sql:           "SELECT id FROM t WHERE x = 1 # hide\nORDER BY id",
+			d:             Question,
+			hasWhere:      true,
+			hasOrder:      true,
+			insertKeyword: "ORDER",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got := analyzeSQL(tt.sql)
+			got := analyzeSQL(tt.sql, tt.d)
 			if got.hasOuterWhere != tt.hasWhere {
 				t.Errorf("hasOuterWhere = %v, want %v", got.hasOuterWhere, tt.hasWhere)
 			}

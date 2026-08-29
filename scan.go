@@ -17,7 +17,7 @@ type analyzed struct {
 	questionN      int
 }
 
-func analyzeSQL(s string) analyzed {
+func analyzeSQL(s string, d Dialect) analyzed {
 	a := analyzed{insertAt: len(s)}
 	depth := 0
 	seenRel := false
@@ -42,7 +42,7 @@ func analyzeSQL(s string) analyzed {
 			i = skipLineComment(s, i)
 			continue
 		}
-		if s[i] == '#' {
+		if s[i] == '#' && d == Question {
 			i = skipLineComment(s, i)
 			continue
 		}
@@ -98,7 +98,7 @@ func analyzeSQL(s string) analyzed {
 				case "FROM":
 					seenRel = true
 					if updateStmt {
-						j := skipSpaceAndComments(s, end)
+						j := skipSpaceAndComments(s, end, d)
 						if j >= len(s) || s[j] != '=' {
 							a.updateFrom = true
 						}
@@ -112,7 +112,7 @@ func analyzeSQL(s string) analyzed {
 						a.hasOuterWhere = true
 					}
 				case "ORDER":
-					j := skipSpaceAndComments(s, end)
+					j := skipSpaceAndComments(s, end, d)
 					by, byEnd := readIdent(s, j)
 					if seenRel && orderPos < 0 && upperASCII(by) == "BY" {
 						orderPos = i
@@ -127,14 +127,14 @@ func analyzeSQL(s string) analyzed {
 						offsetPos = i
 					}
 				case "FOR":
-					j := skipSpaceAndComments(s, end)
+					j := skipSpaceAndComments(s, end, d)
 					next, _ := readIdent(s, j)
 					n := upperASCII(next)
 					if seenRel && forPos < 0 && (n == "UPDATE" || n == "SHARE" || n == "NO" || n == "KEY") {
 						forPos = i
 					}
 				case "GROUP":
-					j := skipSpaceAndComments(s, end)
+					j := skipSpaceAndComments(s, end, d)
 					by, byEnd := readIdent(s, j)
 					if seenRel && groupPos < 0 && upperASCII(by) == "BY" {
 						groupPos = i
@@ -281,7 +281,7 @@ func skipDollarQuote(s string, i int, tag string) int {
 	return len(s)
 }
 
-func skipSpaceAndComments(s string, i int) int {
+func skipSpaceAndComments(s string, i int, d Dialect) int {
 	for i < len(s) {
 		c := s[i]
 		if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
@@ -292,7 +292,7 @@ func skipSpaceAndComments(s string, i int) int {
 			i = skipLineComment(s, i)
 			continue
 		}
-		if s[i] == '#' {
+		if s[i] == '#' && d == Question {
 			i = skipLineComment(s, i)
 			continue
 		}

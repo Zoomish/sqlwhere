@@ -121,7 +121,7 @@ func (q *Query) Build(d Dialect) (string, []any, error) {
 	if !d.valid() {
 		return "", nil, ErrUnknownDialect
 	}
-	info := analyzeSQL(q.base)
+	info := analyzeSQL(q.base, d)
 	if info.maxDollar > 0 && info.questionN > 0 {
 		return "", nil, ErrMixedPlaceholders
 	}

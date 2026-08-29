@@ -116,8 +116,8 @@ q = q.AndIfFn(minPrice != nil, func() sqlwhere.Predicate {
 
 One `Build` call:
 
-- `sqlwhere.Postgres` — `$1`, `$2`, … and `"ident"`
-- `sqlwhere.Question` — `?` and `` `ident` `` (MySQL / SQLite)
+- `sqlwhere.Postgres` — `$1`, `$2`, … and `"ident"`. `#` is not a comment (`#>`, `#>>`, `#-` stay operators).
+- `sqlwhere.Question` — `?` and `` `ident` `` (MySQL / SQLite). `#` starts a line comment.
 
 `ORDER BY` / `LIMIT` / `OFFSET` in the **outer** query conflict with `Order` / `Limit` / `Offset` on the builder (`ErrOrderConflict`, …). Inner subqueries are ignored. Extra predicates are inserted **before** an existing outer `ORDER BY` / `LIMIT` / `OFFSET` / `FOR UPDATE` / `GROUP BY` / `HAVING` / `WINDOW` / `RETURNING` / `FETCH`.
 
